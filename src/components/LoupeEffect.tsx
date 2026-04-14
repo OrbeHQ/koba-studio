@@ -1,192 +1,324 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import * as THREE from 'three';
+import React, { useEffect, useRef } from 'react';
 import { toCanvas } from 'html-to-image';
 
-const vertexShader = `
-varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}
-`;
+// Loupe Physical Layout constraints
+const LOUPE_W = 280;
+const LOUPE_H = Math.round(LOUPE_W * (884 / 899));
+const LENS_CX = Math.round(449 * (LOUPE_W / 899));
+const LENS_CY = Math.round(437 * (LOUPE_W / 899));
+const LENS_R_PX = Math.round(341 * (LOUPE_W / 899));
 
-const fragmentShader = `
-uniform sampler2D uTexture;
-uniform vec2 uMouse;
-uniform vec2 uResolution;
-uniform float uZoom;
-uniform float uRadius;
-
-varying vec2 vUv;
-
-void main() {
-  vec2 uv = vUv;
-  vec2 pixelPos = uv * uResolution;
-  
-  // Invert Y for mouse position because WebGL UV origin is bottom-left
-  vec2 mousePos = vec2(uMouse.x, uResolution.y - uMouse.y);
-  
-  float dist = length(pixelPos - mousePos);
-
-  if (dist > uRadius) {
-    gl_FragColor = vec4(0.0);
-    return;
-  }
-
-  // Refraction logic
-  vec2 offset = (pixelPos - mousePos) * (1.0 / uZoom);
-  
-  // Calculate normal for a sphere
-  float z = sqrt(uRadius * uRadius - dist * dist);
-  vec3 normal = normalize(vec3(pixelPos - mousePos, z));
-  vec3 eyeVec = normalize(vec3(offset, uRadius));
-
-  float iorR = 1.0 / 1.15;
-  float iorG = 1.0 / 1.31;
-  float iorB = 1.0 / 1.45;
-
-  vec3 refractR = refract(eyeVec, normal, iorR);
-  vec3 refractG = refract(eyeVec, normal, iorG);
-  vec3 refractB = refract(eyeVec, normal, iorB);
-
-  vec2 sampleUvR = (mousePos + refractR.xy * uRadius * 0.5) / uResolution;
-  vec2 sampleUvG = (mousePos + refractG.xy * uRadius * 0.5) / uResolution;
-  vec2 sampleUvB = (mousePos + refractB.xy * uRadius * 0.5) / uResolution;
-
-  // Zoom
-  vec2 zoomCenter = mousePos / uResolution;
-  sampleUvR = zoomCenter + (sampleUvR - zoomCenter) / uZoom;
-  sampleUvG = zoomCenter + (sampleUvG - zoomCenter) / uZoom;
-  sampleUvB = zoomCenter + (sampleUvB - zoomCenter) / uZoom;
-
-  vec4 color;
-  color.r = texture2D(uTexture, sampleUvR).r;
-  color.g = texture2D(uTexture, sampleUvG).g;
-  color.b = texture2D(uTexture, sampleUvB).b;
-  color.a = 1.0;
-
-  // Fresnel reflection
-  float fresnel = pow(1.0 - dot(eyeVec, normal), 2.0);
-  color.rgb += vec3(1.0) * fresnel * 0.5;
-
-  // Subtle edge darkening
-  float edge = smoothstep(uRadius - 5.0, uRadius, dist);
-  color.rgb = mix(color.rgb, vec3(0.0), edge * 0.2);
-
-  gl_FragColor = color;
-}
-`;
-
-const LoupeShader = ({ texture, mouse, radius, zoom }: any) => {
-  const { size } = useThree();
-  
-  const uniforms = useMemo(() => ({
-    uTexture: { value: texture },
-    uMouse: { value: new THREE.Vector2(mouse.x, mouse.y) },
-    uResolution: { value: new THREE.Vector2(size.width, size.height) },
-    uZoom: { value: zoom },
-    uRadius: { value: radius }
-  }), [texture, size, zoom, radius]);
-
-  useFrame(() => {
-    uniforms.uMouse.value.set(mouse.x, mouse.y);
-    uniforms.uResolution.value.set(size.width, size.height);
-  });
-
-  return (
-    <mesh>
-      <planeGeometry args={[size.width, size.height]} />
-      <shaderMaterial
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        uniforms={uniforms}
-        transparent={true}
-      />
-    </mesh>
-  );
-};
-
-export default function LoupeEffect({ targetRef, theme = 'dark' }: { targetRef: React.RefObject<HTMLElement>, theme?: 'light' | 'dark' }) {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
-  const [mouse, setMouse] = useState({ x: -1000, y: -1000 });
-  
-  // Adjust these to match the loupe image size
-  const radius = 140; 
-  const zoom = 1.8;
+export default function LoupeEffect({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const capture = async () => {
-      if (!targetRef.current) return;
-      
-      const canvasContainer = document.getElementById('loupe-container');
-      if (canvasContainer) canvasContainer.style.display = 'none';
+    const root = rootRef.current;
+    const canvas = canvasRef.current;
+    if (!root || !canvas) return;
+
+    const diameter = LENS_R_PX * 2;
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    canvas.width = diameter * dpr;
+    canvas.height = diameter * dpr;
+    canvas.style.width = `${diameter}px`;
+    canvas.style.height = `${diameter}px`;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+
+    let active = false;
+    let mx = 0, my = 0;
+    let rafId = 0;
+    let sourceCanvas: HTMLCanvasElement | null = null;
+    let capturing = false;
+
+    const ZOOM = 2.0;
+    const BARREL_K = 0.20; // Increased for a healthy lens bulge
+    const CHROMA_K = 0.05; // Visible RGB fringe
+
+    // Capture at a higher resolution (super-sampling) so that zooming doesn't look pixelated
+    const captureDpr = dpr * 1.5;
+
+    // Capture page to a canvas using html-to-image
+    async function capturePage() {
+      if (capturing) return;
+      capturing = true;
 
       try {
-        const canvas = await toCanvas(targetRef.current, {
-          pixelRatio: window.devicePixelRatio,
-          backgroundColor: theme === 'dark' ? '#0A0A0A' : '#EBEBEB',
-          skipFonts: true, // Speeds up rendering if fonts are already loaded
+        // Capture the entire body to ensure fixed/absolute elements like the navbar are included
+        const appBody = document.body;
+        if (!appBody) return;
+
+        // First, snapshot any WebGL canvases (html-to-image can miss them)
+        const webglCanvases = Array.from(appBody.querySelectorAll('canvas'));
+        const snapshots: { el: HTMLCanvasElement; url: string; rect: DOMRect }[] = [];
+        for (const c of webglCanvases) {
+          // Skip the loupe's own canvas and the custom cursor
+          if (c.closest('#loupe-container') || c.id === 'custom-cursor') continue;
+          try {
+            snapshots.push({ el: c, url: c.toDataURL(), rect: c.getBoundingClientRect() });
+          } catch { }
+        }
+
+        // Capture DOM with a transparent background so we can layer WebGL underneath
+        const captured = await toCanvas(appBody, {
+          cacheBust: false,
+          pixelRatio: captureDpr,
+          backgroundColor: 'transparent',
+          filter: (node: Node) => {
+            if (node instanceof HTMLElement && (node.id === 'loupe-container' || node.id === 'custom-cursor')) return false;
+            return true;
+          },
         });
-        const tex = new THREE.CanvasTexture(canvas);
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        setTexture(tex);
+
+        // Create a composite canvas to handle layering
+        const composite = document.createElement('canvas');
+        composite.width = captured.width;
+        composite.height = captured.height;
+        const compositeCtx = composite.getContext('2d');
+        if (!compositeCtx) return;
+
+        // Layer 1: Draw WebGL background snapshots first
+        for (const snap of snapshots) {
+          const img = new Image();
+          img.src = snap.url;
+          await new Promise<void>(resolve => {
+            img.onload = () => {
+              compositeCtx.drawImage(
+                img,
+                snap.rect.left * captureDpr,
+                (snap.rect.top + window.scrollY) * captureDpr,
+                snap.rect.width * captureDpr,
+                snap.rect.height * captureDpr
+              );
+              resolve();
+            };
+            img.onerror = () => resolve();
+          });
+        }
+
+        // Layer 2: Draw the DOM on top
+        compositeCtx.drawImage(captured, 0, 0);
+
+        sourceCanvas = composite;
       } catch (e) {
-        console.error("Failed to capture HTML", e);
+        console.error('Loupe capture failed:', e);
+      } finally {
+        capturing = false;
+      }
+    }
+
+    // Draw the lens content with barrel distortion, chroma, and realistic glass shading
+    function drawLens() {
+      if (!sourceCanvas) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxR = cx;
+
+      // Calculate how many source pixels correspond to the lens radius
+      const viewR = maxR * (captureDpr / dpr) / ZOOM;
+
+      // Where on the source are we looking?
+      const srcX = (mx + window.scrollX) * captureDpr;
+      const srcY = (my + window.scrollY) * captureDpr;
+
+      // Read a padded chunk from the source canvas to allow aggressive outward distortion bleeding
+      const pad = 2.4; // Massive padding to safely contain the extreme edge stretch
+      const padPix = viewR * pad;
+      const srcLeft = Math.floor(srcX - padPix);
+      const srcTop = Math.floor(srcY - padPix);
+      const srcDiam = Math.ceil(padPix * 2);
+
+      const srcCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+      if (!srcCtx) return;
+
+      // Extract raw image data directly from the zoomed sourceCanvas slice
+      const srcData = srcCtx.getImageData(srcLeft, srcTop, srcDiam, srcDiam);
+      const src = srcData.data;
+
+      const out = ctx.createImageData(w, h);
+      const dst = out.data;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const nx = (x - cx) / maxR;
+          const ny = (y - cy) / maxR;
+          const r2 = nx * nx + ny * ny;
+          const dstIdx = (y * w + x) * 4;
+
+          if (r2 > 1.0) {
+            dst[dstIdx + 3] = 0;
+            continue;
+          }
+
+          // Use a 4th-power mathematical curve (r^4)
+          // This keeps the center 50% of the lens flat, and then begins smoothly
+          // bending outwards, giving a thicker realism to the glass
+          const edgeCurve = r2 * r2;
+
+          // Stretch begins around 50% and peaks at the rim
+          const bd = 1.0 + (0.7 * edgeCurve);
+          const bx = nx * bd;
+          const by = ny * bd;
+
+          // Chromatic aberration (Prism effect)
+          // Massively increased strength (15%) so the RGB separation is extremely visible
+          const ch = 0.15 * edgeCurve;
+
+          // Red: outward, Green: center, Blue: inward
+          const rx = bx * (1.0 + ch);
+          const ry = by * (1.0 + ch);
+          const gx = bx;
+          const gy = by;
+          const bxc = bx * (1.0 - ch);
+          const byc = by * (1.0 - ch);
+
+          // Bilinear pixel sampling for smooth, high-fidelity zoom
+          const sample = (snx: number, sny: number, c: number): number => {
+            const pxX = (srcX - srcLeft) + snx * viewR;
+            const pxY = (srcY - srcTop) + sny * viewR;
+            const x0 = Math.floor(pxX);
+            const y0 = Math.floor(pxY);
+            if (x0 < 0 || x0 >= srcDiam - 1 || y0 < 0 || y0 >= srcDiam - 1) return 0;
+
+            const dx = pxX - x0;
+            const dy = pxY - y0;
+
+            const p1 = src[(y0 * srcDiam + x0) * 4 + c];
+            const p2 = src[(y0 * srcDiam + (x0 + 1)) * 4 + c];
+            const p3 = src[((y0 + 1) * srcDiam + x0) * 4 + c];
+            const p4 = src[((y0 + 1) * srcDiam + (x0 + 1)) * 4 + c];
+
+            const top = p1 * (1 - dx) + p2 * dx;
+            const bot = p3 * (1 - dx) + p4 * dx;
+            return top * (1 - dy) + bot * dy;
+          };
+
+          dst[dstIdx] = sample(rx, ry, 0);
+          dst[dstIdx + 1] = sample(gx, gy, 1);
+          dst[dstIdx + 2] = sample(bxc, byc, 2);
+          dst[dstIdx + 3] = 255;
+        }
       }
 
-      if (canvasContainer) canvasContainer.style.display = 'block';
-    };
+      ctx.putImageData(out, 0, 0);
 
-    // Initial capture
-    setTimeout(capture, 1000); // Wait for GSAP animations to finish
+      // --- Realistic Glass Rendering Overlays ---
+      ctx.globalCompositeOperation = 'source-over';
+      const isDark = document.documentElement.classList.contains('dark');
 
-    let timeoutId: any;
-    const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(capture, 500);
-    };
-    window.addEventListener('resize', handleResize);
-    
+      // 1. Inner directional shadow (depth)
+      const shadowGrad = ctx.createRadialGradient(cx + maxR * 0.2, cy + maxR * 0.2, maxR * 0.4, cx, cy, maxR);
+      shadowGrad.addColorStop(0.5, 'rgba(0,0,0,0)');
+      shadowGrad.addColorStop(1, isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.15)');
+      ctx.fillStyle = shadowGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Glossy Specular Highlight (reflection spot on top left)
+      const glareGrad = ctx.createRadialGradient(cx - maxR * 0.35, cy - maxR * 0.35, maxR * 0.02, cx - maxR * 0.35, cy - maxR * 0.35, maxR * 0.35);
+      glareGrad.addColorStop(0, isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)');
+      glareGrad.addColorStop(0.2, isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.2)');
+      glareGrad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = glareGrad;
+      ctx.fill();
+
+      // 3. Ambient rim light 
+      const rimGrad = ctx.createRadialGradient(cx, cy, maxR * 0.9, cx, cy, maxR);
+      rimGrad.addColorStop(0, 'rgba(255,255,255,0)');
+      rimGrad.addColorStop(1, isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.15)');
+      ctx.fillStyle = rimGrad;
+      ctx.fill();
+    }
+
+    function update() {
+      rafId = 0;
+      if (!active) return;
+      root.style.transform = `translate3d(${mx - LENS_CX}px, ${my - LENS_CY}px, 0)`;
+      drawLens();
+      rafId = requestAnimationFrame(update);
+    }
+
+    function onMove(e: MouseEvent) {
+      mx = e.clientX;
+      my = e.clientY;
+      if (active && !rafId) rafId = requestAnimationFrame(update);
+    }
+
+    async function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Meta' && !active) {
+        active = true;
+        document.body.style.cursor = 'none';
+        root.style.opacity = '1';
+        await capturePage();
+        if (active && !rafId) rafId = requestAnimationFrame(update);
+      }
+    }
+
+    function onKeyUp(e: KeyboardEvent) {
+      if (e.key === 'Meta') {
+        active = false;
+        document.body.style.cursor = '';
+        root.style.opacity = '0';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        sourceCanvas = null;
+      }
+    }
+
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('keydown', onKeyDown, { capture: true });
+    window.addEventListener('keyup', onKeyUp, { capture: true });
+
     return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(timeoutId);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('keydown', onKeyDown, { capture: true });
+      window.removeEventListener('keyup', onKeyUp, { capture: true });
+      document.body.style.cursor = '';
+      if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [targetRef, theme]);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMouse({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  if (!texture) return null;
+  const diameter = LENS_R_PX * 2;
 
   return (
-    <div 
+    <div
       id="loupe-container"
-      className="fixed inset-0 pointer-events-none z-50"
+      ref={rootRef}
+      className="fixed top-0 left-0 pointer-events-none z-100"
+      style={{ width: LOUPE_W, height: LOUPE_H, opacity: 0, willChange: 'transform' }}
     >
-      <Canvas orthographic camera={{ position: [0, 0, 1], zoom: 1 }}>
-        <LoupeShader texture={texture} mouse={mouse} radius={radius} zoom={zoom} />
-      </Canvas>
-      
-      {/* The Loupe Image Overlay */}
-      <div 
-        className="absolute w-[360px] h-[360px] pointer-events-none bg-no-repeat bg-contain bg-center"
+      <div
         style={{
-          left: mouse.x - 180,
-          top: mouse.y - 180,
-          // Using a high-quality transparent loupe ring placeholder.
-          // Replace this URL with the actual image URL if needed.
-          backgroundImage: 'url("https://cdn.pixabay.com/photo/2013/07/12/15/24/magnifying-glass-149952_1280.png")', 
-          opacity: mouse.x > 0 ? 1 : 0,
-          transition: 'opacity 0.2s',
-          filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.3))'
+          position: 'absolute',
+          top: `${LENS_CY - LENS_R_PX}px`,
+          left: `${LENS_CX - LENS_R_PX}px`,
+          width: `${diameter}px`,
+          height: `${diameter}px`,
+          borderRadius: '50%',
+          overflow: 'hidden',
         }}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{ width: '100%', height: '100%', borderRadius: '50%' }}
+        />
+        <div style={{
+          position: 'absolute', inset: 0, borderRadius: '50%',
+          boxShadow: 'inset 0 0 4px rgba(0,0,0,0.1)',
+          pointerEvents: 'none',
+        }} />
+      </div>
+
+      <img
+        src="/loupe.svg"
+        alt=""
+        draggable={false}
+        className="absolute inset-0 w-full h-full select-none"
+        style={{ filter: theme === 'dark' ? 'brightness(0.9) contrast(1.1)' : 'none' }}
       />
     </div>
   );
