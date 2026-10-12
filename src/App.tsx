@@ -3,16 +3,28 @@ import gsap from 'gsap';
 import BrandList from './components/BrandList';
 import BrandDotOverlay from './components/BrandDotOverlay';
 import GridLine from './components/GridLine';
-import KobaLogo from './components/KobaLogo';
+import OrbeLogo from './components/OrbeLogo';
+import FAQSection from './components/FAQSection';
 import { playTapSound } from './lib/audio';
 import Loader from './components/Loader';
-import SmoothScroll from './components/SmoothScroll';
 import CustomCursor from './components/CustomCursor';
 
 // Lazy loaded high-performance components
 const DotGridShader = lazy(() => import('./components/DotGridShader'));
 const InteractiveCanvas = lazy(() => import('./components/InteractiveCanvas'));
 const LoupeEffect = lazy(() => import('./components/LoupeEffect'));
+
+// The Orbe mark, inlined as a CSS mask so the shader only renders inside the logo shape.
+const ORBE_MASK_SVG = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none'><path d='M100 0H87.4915V16.9396C77.9935 6.16979 64.3259 0 49.9661 0V12.5085C70.6908 12.5085 87.4915 29.3093 87.4915 50.0341H100V0Z' fill='black'/><path d='M100 49.95H87.4915V66.8896C77.9935 56.1198 64.3259 49.95 49.9661 49.95V62.4585C70.6908 62.4585 87.4915 79.2593 87.4915 99.9841H100V49.95Z' fill='black'/><path d='M0 0H12.5085V16.9396C22.0065 6.16979 35.6741 0 50.0339 0V12.5085C29.3092 12.5085 12.5085 29.3093 12.5085 50.0341H0V0Z' fill='black'/><path d='M0 49.95H12.5085V66.8896C22.0065 56.1198 35.6741 49.95 50.0339 49.95V62.4585C29.3092 62.4585 12.5085 79.2593 12.5085 99.9841H0V49.95Z' fill='black'/></svg>`;
+const ORBE_MASK = `url("data:image/svg+xml,${encodeURIComponent(ORBE_MASK_SVG)}")`;
+const orbeMaskStyle = {
+  maskImage: ORBE_MASK,
+  WebkitMaskImage: ORBE_MASK,
+  maskSize: '100% 100%',
+  WebkitMaskSize: '100% 100%',
+  maskRepeat: 'no-repeat',
+  WebkitMaskRepeat: 'no-repeat',
+} as React.CSSProperties;
 
 function IntersectionMarker({ className }: { className?: string }) {
   return (
@@ -122,7 +134,6 @@ export default function App() {
 
   return (
     <div className={`${theme} overflow-x-hidden relative cursor-none`}>
-      <SmoothScroll />
       <CustomCursor />
       {/* Loader acts as purely a cover layer now */}
       {!isLoaderDone && (
@@ -149,7 +160,7 @@ export default function App() {
         {/* FLOATING NAVBAR */}
         <nav className="nav-container fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 px-6 py-3 bg-[#EBEBEB]/80 dark:bg-[#0A0A0A]/80 backdrop-blur-md rounded-full border border-gray-400 dark:border-neutral-600 shadow-sm transition-colors duration-300 pointer-events-auto">
           <div className="flex flex-col">
-            <div className="font-sans text-sm text-black dark:text-[#F5F0E8] font-bold">Koba Studio</div>
+            <div className="font-sans text-sm text-black dark:text-[#F5F0E8] font-bold">Orbe Labs</div>
             <div className="font-mono text-[9px] uppercase text-black dark:text-white tracking-widest opacity-60">Design & Dev</div>
           </div>
           <div className="w-px h-6 bg-gray-400 dark:bg-neutral-600"></div>
@@ -161,29 +172,22 @@ export default function App() {
           />
         </nav>
 
-        {/* MASSIVE IMMERSIVE HERO */}
-        <div className="col-span-3 h-[85vh] min-h-[600px] relative flex flex-col justify-center overflow-hidden border-b border-gray-400 dark:border-neutral-600 border-dashed transition-colors duration-300">
+        {/* IMMERSIVE HERO — constrained to the middle grid column, shader lives inside the Orbe mark */}
+        <div className="col-2 h-[85vh] min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden border-b border-gray-400 dark:border-neutral-600 border-dashed transition-colors duration-300 px-5 sm:px-8">
           <IntersectionMarker className="top-0 left-0" />
           <IntersectionMarker className="top-0 right-0" />
           <IntersectionMarker className="bottom-0 left-0" />
           <IntersectionMarker className="bottom-0 right-0" />
 
-          {/* Full-bleed interactive background shader (Lazy Loaded for max performance) */}
-          <div className="hero-shader-container absolute inset-0 w-full h-full z-0" id="hero-shader">
-            <Suspense fallback={null}>
-              <DotGridShader theme={theme} brandColor={hoveredBrandColor} />
+          {/* Interactive dot-grid shader, masked to the silhouette of the Orbe logo (Lazy Loaded) */}
+          <div
+            className="hero-shader-container relative z-10 w-full max-w-[500px] aspect-square"
+            style={orbeMaskStyle}
+          >
+            <Suspense fallback={<OrbeLogo size="100%" className="w-full h-full opacity-20" />}>
+              <DotGridShader theme={theme} brandColor={hoveredBrandColor} logo />
             </Suspense>
           </div>
-
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[900px] h-[55%] bg-[#EBEBEB]/80 dark:bg-[#0A0A0A]/80 blur-[80px] pointer-events-none z-10 rounded-full" />
-
-          {/* Massive Editorial Typography Layer */}
-          {/* 
-          <div className="relative z-20 w-full max-w-5xl mx-auto px-5 sm:px-8 text-center pointer-events-none pb-12 mt-12 mix-blend-normal">
-            <h1 className="hero-text font-editorial italic text-4xl sm:text-6xl md:text-7xl lg:text-[85px] font-medium text-black dark:text-white tracking-tight leading-[1.05] drop-shadow-xl mt-10">
-             High-Converting Digital Brands That Feel Unmistakably You. Built Side by Side by a Designer Developer Duo Obsessed with Flawless Design            </h1>
-          </div>
-          */}
         </div>
 
         {/* Remaining Story Paragraphs */}
@@ -192,7 +196,7 @@ export default function App() {
 
           <div className="animate-fade-in flex flex-col gap-8 sm:gap-10 mt-6 md:mt-10">
             <p className="font-editorial text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
-              Meet <span className="underline decoration-1 underline-offset-4 hover:decoration-2 transition-all">Daniel</span> & <span className="underline decoration-1 underline-offset-4 hover:decoration-2 transition-all">Ananiya</span>, the designer-developer duo behind Koba Studio. We partner only with founders and teams we truly believe in. From day one, we work side by side with you so your vision never gets lost in translation. Every detail lands exactly as you dreamed it.
+              Meet <span className="underline decoration-1 underline-offset-4 hover:decoration-2 transition-all">Daniel</span> & <span className="underline decoration-1 underline-offset-4 hover:decoration-2 transition-all">Ananiya</span>, the designer-developer duo behind Orbe Labs. We partner only with founders and teams we truly believe in. From day one, we work side by side with you so your vision never gets lost in translation. Every detail lands exactly as you dreamed it.
             </p>
             <p className="font-editorial text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
               We’re obsessed with the magic that happens when design and code move in perfect harmony. We jump into bold ideas fast, explore every exciting possibility, and sculpt everything until it feels tight, alive, and unmistakably you.
@@ -209,13 +213,16 @@ export default function App() {
           </div>
         </div>
 
+        {/* Row 4b: FAQ */}
+        <FAQSection />
+
         {/* Row 5: Contact/Vision + Interactive Canvas (Lazy Loaded) */}
         <div className="col-2 py-10 sm:py-14 px-5 sm:px-8 flex flex-col gap-10 transition-colors duration-300 relative">
           <GridLine className="pillar-line-h bottom-0 left-[-2000px] right-[-2000px] h-px text-gray-400 dark:text-neutral-600" dashArray="none" />
           <div className="animate-fade-in flex flex-col gap-6 sm:gap-8 mt-4 md:mt-8">
             <p className="font-editorial text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
               Got something you're excited about? Let's make it real together. <br className="hidden sm:block" />
-              <a href="#" className="font-medium text-black dark:text-white underline decoration-[1.5px] underline-offset-4 hover:opacity-70 transition-opacity">hello@koba.studio</a>
+              <a href="#" className="font-medium text-black dark:text-white underline decoration-[1.5px] underline-offset-4 hover:opacity-70 transition-opacity">hello@orbelabs.com</a>
             </p>
             <p className="font-editorial text-[16px] sm:text-[18px] text-[#111] dark:text-[#F3F3F3] opacity-60 antialiased">
               Based in Ethiopia, available remotely.
@@ -233,9 +240,9 @@ export default function App() {
           <GridLine className="pillar-line-h top-3 left-[-2000px] right-[-2000px] h-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
 
           <div className="animate-fade-in flex flex-col items-center justify-center gap-6 text-center">
-            <KobaLogo size={40} className="mb-2 opacity-80 hover:opacity-100 transition-opacity" />
+            <OrbeLogo size={40} className="mb-2 opacity-80 hover:opacity-100 transition-opacity" />
 
-            <div className="font-mono text-xs text-black dark:text-white opacity-40 tracking-[0.25em] uppercase">| KOBA STUDIO |</div>
+            <div className="font-mono text-xs text-black dark:text-white opacity-40 tracking-[0.25em] uppercase">| Orbe Labs |</div>
             <div className="font-mono text-[10px] text-black dark:text-white opacity-40 tracking-[0.15em] uppercase leading-relaxed max-w-md">
               DESIGN AND DEVELOPMENT<br />
               BASED IN ETHIOPIA, OPERATING GLOBALLY.

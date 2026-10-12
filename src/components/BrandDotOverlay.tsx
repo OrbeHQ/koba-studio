@@ -76,6 +76,7 @@ export default function BrandDotOverlay({ color }: Props) {
     h: 0,
     dpr: 1,
     animId: 0,
+    heroBottom: 0,       // clip so dots never bleed up into the hero section
   });
 
   // Update targets without re-mounting the loop
@@ -111,10 +112,19 @@ export default function BrandDotOverlay({ color }: Props) {
       canvas!.height = s.h * s.dpr;
       canvas!.style.width = s.w + 'px';
       canvas!.style.height = s.h + 'px';
+      measureHero();
+    }
+
+    // The hero sits in the middle grid column; find its bottom edge so the
+    // dot overlay can clip to the region below it (never over the hero).
+    function measureHero() {
+      const hero = document.getElementById('hero-section');
+      s.heroBottom = hero ? hero.getBoundingClientRect().bottom : 0;
     }
 
     resize();
     window.addEventListener('resize', resize);
+    window.addEventListener('scroll', measureHero, { passive: true });
 
     function draw(now: number) {
       if (s.w < 768) {
@@ -123,6 +133,12 @@ export default function BrandDotOverlay({ color }: Props) {
       }
 
       const elapsed = (now - s.startTime) / 1000;
+
+      // Clip: never draw over the hero. The hero now lives in the middle grid
+      // column (col-2), so its bottom edge sits at the same vertical offset as
+      // the content sections below it. Measured fresh each frame so it tracks
+      // layout / viewport changes, but we bail out cheaply when fully faded.
+      const heroBottom = s.heroBottom;
 
       // Fast, smooth fade
       const opTarget = s.active ? 1 : 0;
@@ -167,6 +183,9 @@ export default function BrandDotOverlay({ color }: Props) {
           const vx = col * spacing;
           const vy = row * spacing;
 
+          // Clip to below the hero so the effect never bleeds into it
+          if (vy < heroBottom) continue;
+
           // ONLY draw in the left and right gutters
           if (vx >= bounds.left && vx <= bounds.right) continue;
 
@@ -209,6 +228,7 @@ export default function BrandDotOverlay({ color }: Props) {
     return () => {
       cancelAnimationFrame(s.animId);
       window.removeEventListener('resize', resize);
+      window.removeEventListener('scroll', measureHero);
     };
   }, []);
 

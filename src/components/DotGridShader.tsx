@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -38,6 +38,7 @@ const fragmentShader = `
   uniform float uTheme;
   uniform float uMouseHover;
   uniform vec3 uBrandColor;
+  uniform float uLogo;
 
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -58,8 +59,8 @@ const fragmentShader = `
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
     float aspect = uResolution.x / uResolution.y;
 
-    // Grid — solid sizing
-    float gridSize = 36.0;
+    // Grid — solid sizing (denser & chunkier dots when rendered inside the logo)
+    float gridSize = mix(36.0, 24.0, uLogo);
     vec2 gridUv = vec2(uv.x * aspect, uv.y) * gridSize;
     vec2 cell = fract(gridUv);
     vec2 id = floor(gridUv);
@@ -119,6 +120,17 @@ const fragmentShader = `
     vec3 color = mix(vec3(0.0), vec3(1.0), uTheme);
     color = mix(color, uBrandColor, uMouseHover);
 
+    // In logo variant, tint each quadrant with the Orbe mark palette
+    if (uLogo > 0.5) {
+      vec2 q = step(vec2(0.5), uv); // 1.0 on the right / top half
+      vec3 quad =
+        (q.x > 0.5 && q.y > 0.5) ? vec3(0.157, 0.392, 0.863) :  // top-right  #2864DC blue
+        (q.x > 0.5 && q.y < 0.5) ? vec3(0.902, 0.192, 0.478) :  // bottom-right #E6317A pink
+        (q.x < 0.5 && q.y > 0.5) ? vec3(0.965, 0.788, 0.271) :  // top-left   #F6C945 yellow
+                                    vec3(0.231, 0.702, 0.290);  // bottom-left #3BB34A green
+      color = mix(quad, uBrandColor, uMouseHover);
+    }
+
     gl_FragColor = vec4(color, dot);
   }
 `;
@@ -126,9 +138,10 @@ const fragmentShader = `
 interface ShaderPlaneProps {
   theme: 'light' | 'dark';
   brandColor: string | null;
+  logo?: boolean;
 }
 
-function ShaderPlane({ theme, brandColor }: ShaderPlaneProps) {
+function ShaderPlane({ theme, brandColor, logo = false }: ShaderPlaneProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const { size, gl } = useThree();
   const hoverTarget = useRef(false);
@@ -140,6 +153,7 @@ function ShaderPlane({ theme, brandColor }: ShaderPlaneProps) {
     uTheme: { value: theme === 'dark' ? 1.0 : 0.0 },
     uMouseHover: { value: 0.0 },
     uBrandColor: { value: new THREE.Vector3(...pickRandomBrandColor()) },
+    uLogo: { value: logo ? 1.0 : 0.0 },
   });
 
   // On direct canvas hover — pick a new random brand color each enter
@@ -195,18 +209,43 @@ function ShaderPlane({ theme, brandColor }: ShaderPlaneProps) {
 interface DotGridShaderProps {
   theme?: 'light' | 'dark';
   brandColor?: string | null;
+  /** Render in "logo" mode: chunkier dots tinted with the Orbe quadrant palette. */
+  logo?: boolean;
 }
 
-export default function DotGridShader({ theme = 'light', brandColor = null }: DotGridShaderProps) {
+export default function DotGridShader({ theme = 'light', brandColor = null, logo = false }: DotGridShaderProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(true);
+
+  // Pause the render loop entirely when scrolled out of view — big perf win.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { rootMargin: '100px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="w-full h-full absolute inset-0 z-10">
+    <div ref={containerRef} className="w-full h-full absolute inset-0 z-10">
       <Canvas
         orthographic
         camera={{ position: [0, 0, 1], left: -1, right: 1, top: 1, bottom: -1 }}
-        gl={{ alpha: true, premultipliedAlpha: false, preserveDrawingBuffer: true }}
+        dpr={[1, 1.5]}
+        frameloop={inView ? 'always' : 'never'}
+        gl={{
+          alpha: true,
+          premultipliedAlpha: false,
+          preserveDrawingBuffer: true,
+          antialias: false,
+          powerPreference: 'high-performance',
+        }}
         style={{ background: 'transparent' }}
       >
-        <ShaderPlane theme={theme} brandColor={brandColor} />
+        <ShaderPlane theme={theme} brandColor={brandColor} logo={logo} />
       </Canvas>
     </div>
   );

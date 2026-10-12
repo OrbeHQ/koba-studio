@@ -68,7 +68,7 @@ export default function Loader({ onComplete, onFadeOutStart, theme }: LoaderProp
       <div ref={textRef} className="flex flex-col items-center gap-4">
         {/* Identity */}
         <div className="font-mono text-xs tracking-[0.25em] uppercase opacity-40">
-          | KOBA STUDIO |
+          | ORBE LABS |
         </div>
 
         {/* Massive Percentage */}

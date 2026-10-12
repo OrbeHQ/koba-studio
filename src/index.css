@@ -3,20 +3,23 @@
   src: url('/DepartureMono-Regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
   font-family: 'Editorial_New';
-  src: url('/PPEditorialNew-Italic.otf') format('opentype');
+  src: url('/PPEditorialNew-Italic.woff2') format('woff2');
   font-weight: normal;
   font-style: italic;
+  font-display: swap;
 }
 
 @font-face {
   font-family: 'Editorial_New';
-  src: url('/PPEditorialNew-Regular.otf') format('opentype');
+  src: url('/PPEditorialNew-Regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 @import "tailwindcss";
@@ -50,7 +53,7 @@
   color: #1A1A1A;
 }
 
-/* Custom Cursor & Smooth Scroll Styles */
+/* Custom Cursor Styles */
 html, body {
   cursor: none !important;
   scroll-behavior: auto !important;
@@ -62,26 +65,4 @@ a, button, [role="button"], .cursor-pointer {
 
 [data-hide-cursor="true"], [data-hide-cursor="true"] * {
   cursor: auto !important;
-}
-
-/* Lenis Recommended CSS */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-
-.lenis.lenis-scrolling iframe {
-  pointer-events: none;
 }

@@ -116,7 +116,7 @@ function GriddedPaper() {
 
       {/* Corner Label */}
       <div className="absolute bottom-4 left-4 font-mono text-[8px] text-[#1A1A1A] opacity-60 uppercase tracking-widest">
-        Koba Studio
+        Orbe Labs
       </div>
     </div>
   );
@@ -150,7 +150,7 @@ function RulerTool() {
         ))}
       </div>
       <div className="w-full h-px bg-black/20 mt-1"></div>
-      <div className="absolute bottom-1 right-2 text-[8px] font-mono text-black/60 uppercase tracking-widest">Koba Studio</div>
+      <div className="absolute bottom-1 right-2 text-[8px] font-mono text-black/60 uppercase tracking-widest">Orbe Labs</div>
     </div>
   );
 }
