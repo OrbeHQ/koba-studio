@@ -7,18 +7,114 @@
 }
 
 @font-face {
-  font-family: 'Editorial_New';
-  src: url('/PPEditorialNew-Italic.woff2') format('woff2');
-  font-weight: normal;
+  font-family: 'PP Kyoto';
+  src: url('/PPKyoto-Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Kyoto';
+  src: url('/PPKyoto-ThinItalic.otf') format('opentype');
+  font-weight: 100;
   font-style: italic;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Editorial_New';
-  src: url('/PPEditorialNew-Regular.woff2') format('woff2');
-  font-weight: normal;
+  font-family: 'PP Kyoto';
+  src: url('/PPKyoto-Light.otf') format('opentype');
+  font-weight: 300;
   font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Kyoto';
+  src: url('/PPKyoto-LightItalic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Kyoto';
+  src: url('/PPKyoto-Medium.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Kyoto';
+  src: url('/PPKyoto-MediumItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Kyoto';
+  src: url('/PPKyoto-Extrabold.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Kyoto';
+  src: url('/PPKyoto-ExtraboldItalic.otf') format('opentype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Frama';
+  src: url('/PPFrama-Extralight.otf') format('opentype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Frama';
+  src: url('/PPFrama-ExtralightItalic.otf') format('opentype');
+  font-weight: 200;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Frama';
+  src: url('/PPFrama-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Frama';
+  src: url('/PPFrama-RegularItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Frama';
+  src: url('/PPFrama-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Frama';
+  src: url('/PPFrama-BlackItalic.otf') format('opentype');
+  font-weight: 900;
+  font-style: italic;
   font-display: swap;
 }
 
@@ -27,9 +123,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "PP Kyoto", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Departure Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-editorial: "Editorial_New", serif;
+  --font-editorial: "PP Frama", Georgia, serif;
 
   --logo-bg: #000000;
   --logo-mark: #FFFFFF;

@@ -1,18 +1,17 @@
-import React, { useEffect, useLayoutEffect, useCallback, useRef, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, lazy, Suspense } from 'react';
 import gsap from 'gsap';
 import BrandList from './components/BrandList';
 import BrandDotOverlay from './components/BrandDotOverlay';
 import GridLine from './components/GridLine';
 import OrbeLogo from './components/OrbeLogo';
 import FAQSection from './components/FAQSection';
+import ProcessSection from './components/ProcessSection';
 import { playTapSound } from './lib/audio';
-import Loader from './components/Loader';
 import CustomCursor from './components/CustomCursor';
 
 // Lazy loaded high-performance components
 const DotGridShader = lazy(() => import('./components/DotGridShader'));
 const InteractiveCanvas = lazy(() => import('./components/InteractiveCanvas'));
-const LoupeEffect = lazy(() => import('./components/LoupeEffect'));
 
 // The Orbe mark, inlined as a CSS mask so the shader only renders inside the logo shape.
 const ORBE_MASK_SVG = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none'><path d='M100 0H87.4915V16.9396C77.9935 6.16979 64.3259 0 49.9661 0V12.5085C70.6908 12.5085 87.4915 29.3093 87.4915 50.0341H100V0Z' fill='black'/><path d='M100 49.95H87.4915V66.8896C77.9935 56.1198 64.3259 49.95 49.9661 49.95V62.4585C70.6908 62.4585 87.4915 79.2593 87.4915 99.9841H100V49.95Z' fill='black'/><path d='M0 0H12.5085V16.9396C22.0065 6.16979 35.6741 0 50.0339 0V12.5085C29.3092 12.5085 12.5085 29.3093 12.5085 50.0341H0V0Z' fill='black'/><path d='M0 49.95H12.5085V66.8896C22.0065 56.1198 35.6741 49.95 50.0339 49.95V62.4585C29.3092 62.4585 12.5085 79.2593 12.5085 99.9841H0V49.95Z' fill='black'/></svg>`;
@@ -43,12 +42,7 @@ export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [hoveredBrandColor, setHoveredBrandColor] = useState<string | null>(null);
-  const [isLoaderDone, setIsLoaderDone] = useState(false);
-  const [animationStarted, setAnimationStarted] = useState(false);
   const masterTl = useRef<gsap.core.Timeline | null>(null);
-
-  const handleLoaderComplete = useCallback(() => setIsLoaderDone(true), []);
-  const handleAnimationStart = useCallback(() => setAnimationStarted(true), []);
 
   const toggleTheme = () => {
     playTapSound();
@@ -66,7 +60,7 @@ export default function App() {
   // Master Entrance GSAP Timeline properly synced on Layout
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
       masterTl.current = tl;
 
       // Initialization: These happen INSTANTLY on mount, completely preventing FOUC
@@ -125,37 +119,22 @@ export default function App() {
     return () => ctx.revert();
   }, []);
 
-  // Trigger Master Timeline concurrently with Loader exit
-  useEffect(() => {
-    if (animationStarted && masterTl.current) {
-      masterTl.current.play();
-    }
-  }, [animationStarted]);
-
   return (
     <div className={`${theme} overflow-x-hidden relative cursor-none`}>
       <CustomCursor />
-      {/* Loader acts as purely a cover layer now */}
-      {!isLoaderDone && (
-        <Loader
-          theme={theme}
-          onFadeOutStart={handleAnimationStart}
-          onComplete={handleLoaderComplete}
-        />
-      )}
 
       <div
         ref={containerRef}
         className="min-h-screen bg-[#EBEBEB] dark:bg-[#0A0A0A] text-[#1A1A1A] dark:text-[#EBEBEB] font-sans grid grid-cols-[32px_1fr_32px] sm:grid-cols-[64px_1fr_64px] md:grid-cols-[1fr_500px_1fr] lg:grid-cols-[1fr_500px_1fr] grid-rows-[auto_auto_auto_auto_auto_auto_1fr] transition-colors duration-300 relative"
       >
-        {/* === GLOBAL ARCHITECTURAL PILLARS === */}
+        {/* === GLOBAL ARCHITECTURAL PILLARS (run full height, including hero) === */}
         {/* Left Double Pillar */}
-        <GridLine vertical className="pillar-line-v top-[max(85vh,600px)] bottom-0 left-[32px] sm:left-[64px] md:left-[calc(50%-250px)] w-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
-        <GridLine vertical className="pillar-line-v top-[max(85vh,600px)] bottom-0 left-[20px] sm:left-[52px] md:left-[calc(50%-262px)] w-px text-gray-400 dark:text-neutral-600" dashArray="none" />
+        <GridLine vertical className="pillar-line-v top-0 bottom-0 left-[32px] sm:left-[64px] md:left-[calc(50%-250px)] w-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
+        <GridLine vertical className="pillar-line-v top-0 bottom-0 left-[20px] sm:left-[52px] md:left-[calc(50%-262px)] w-px text-gray-400 dark:text-neutral-600" dashArray="none" />
 
         {/* Right Double Pillar */}
-        <GridLine vertical className="pillar-line-v top-[max(85vh,600px)] bottom-0 right-[32px] sm:right-[64px] md:right-[calc(50%-250px)] w-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
-        <GridLine vertical className="pillar-line-v top-[max(85vh,600px)] bottom-0 right-[20px] sm:right-[52px] md:right-[calc(50%-262px)] w-px text-gray-400 dark:text-neutral-600" dashArray="none" />
+        <GridLine vertical className="pillar-line-v top-0 bottom-0 right-[32px] sm:right-[64px] md:right-[calc(50%-250px)] w-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
+        <GridLine vertical className="pillar-line-v top-0 bottom-0 right-[20px] sm:right-[52px] md:right-[calc(50%-262px)] w-px text-gray-400 dark:text-neutral-600" dashArray="none" />
 
         {/* FLOATING NAVBAR */}
         <nav className="nav-container fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 px-6 py-3 bg-[#EBEBEB]/80 dark:bg-[#0A0A0A]/80 backdrop-blur-md rounded-full border border-gray-400 dark:border-neutral-600 shadow-sm transition-colors duration-300 pointer-events-auto">
@@ -173,7 +152,7 @@ export default function App() {
         </nav>
 
         {/* IMMERSIVE HERO — constrained to the middle grid column, shader lives inside the Orbe mark */}
-        <div className="col-2 h-[85vh] min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden border-b border-gray-400 dark:border-neutral-600 border-dashed transition-colors duration-300 px-5 sm:px-8">
+        <div id="hero-section" className="col-2 h-[85vh] min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden border-b border-gray-400 dark:border-neutral-600 border-dashed transition-colors duration-300 px-5 sm:px-8">
           <IntersectionMarker className="top-0 left-0" />
           <IntersectionMarker className="top-0 right-0" />
           <IntersectionMarker className="bottom-0 left-0" />
@@ -196,10 +175,10 @@ export default function App() {
 
           <div className="animate-fade-in flex flex-col gap-8 sm:gap-10 mt-6 md:mt-10">
             <p className="font-editorial text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
-              Meet <span className="underline decoration-1 underline-offset-4 hover:decoration-2 transition-all">Daniel</span> & <span className="underline decoration-1 underline-offset-4 hover:decoration-2 transition-all">Ananiya</span>, the designer-developer duo behind Orbe Labs. We partner only with founders and teams we truly believe in. From day one, we work side by side with you so your vision never gets lost in translation. Every detail lands exactly as you dreamed it.
+          Orbe Labs is an independent design and development studio for ideas with somewhere to go. We give them shape, character, and a life beyond the screen.
             </p>
             <p className="font-editorial text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
-              We’re obsessed with the magic that happens when design and code move in perfect harmony. We jump into bold ideas fast, explore every exciting possibility, and sculpt everything until it feels tight, alive, and unmistakably you.
+              We work only with founders and teams whose vision we believe in. From day one we sit beside you so nothing gets diluted between the idea and the product that ships. Design and code move as one. We start quickly, test the edges, and refine until every detail lands exactly as you intended.
             </p>
           </div>
         </div>
@@ -213,7 +192,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* Row 4b: FAQ */}
+        {/* Row 4b: Scroll-driven process / clover section (spans full grid width) */}
+        <div className="col-span-3 relative">
+          <ProcessSection />
+        </div>
+
+        {/* Row 4c: FAQ */}
         <FAQSection />
 
         {/* Row 5: Contact/Vision + Interactive Canvas (Lazy Loaded) */}
@@ -261,11 +245,6 @@ export default function App() {
         }}></div>
 
         <BrandDotOverlay color={hoveredBrandColor} theme={theme} />
-
-        {/* Lazy load Loupe so html-to-image doesn't freeze the boot sequence */}
-        <Suspense fallback={null}>
-          <LoupeEffect theme={theme} />
-        </Suspense>
       </div>
     </div>
   );
