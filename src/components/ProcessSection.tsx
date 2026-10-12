@@ -12,19 +12,19 @@ interface Step {
 const STEPS: Step[] = [
   {
     title: 'Website architecture',
-    desc: 'We structure your sitemap and information architecture around your business goals, user journeys, and conversion paths, so developers can find what they need without friction.',
+    desc: 'We map your sitemap to business goals and user journeys, so visitors find what they need without friction.',
   },
   {
     title: 'Content strategy',
-    desc: 'We craft content-first copy for your site, guiding visitors toward conversion.',
+    desc: "We write content-first copy that speaks your visitor's language and guides every scroll toward conversion.",
   },
   {
     title: 'Design',
-    desc: 'We shape an interface that guides people toward their goals, with custom illustration and motion tailored to your brand.',
+    desc: 'We design interfaces with custom illustration and motion that guide people to their goals.',
   },
   {
     title: 'Development',
-    desc: 'We ship your site with accessibility, SEO, analytics, and lead capture built in, ready to convert and be measured from day one.',
+    desc: 'We ship with accessibility, SEO, analytics, and lead capture built in — ready to measure from day one.',
   },
   {
     title: 'Continued growth',
@@ -32,73 +32,60 @@ const STEPS: Step[] = [
   },
 ];
 
-// A 4-lobe clover = four overlapping circles in a 2x2 grid. The union outline
-// walks each circle's OUTER 270° arc, joining consecutive lobes at their
-// far-side intersection points (no connecting segments needed). 1000x1000 box.
-const R = 320;
-const CENTER = 500;
-const LOBES: Array<[number, number]> = [
-  [340, 340], // top-left
-  [660, 340], // top-right
-  [660, 660], // bottom-right
-  [340, 660], // bottom-left
-];
+// One brand color per segment, clockwise from the top.
+const SEG_COLORS = ['#2864DC', '#E6317A', '#3BB34A', '#F6C945', '#FF6B2B'];
 
-// Far-side intersection of two equal circles (the one distant from the middle).
-function farIntersection(
-  c1: [number, number],
-  c2: [number, number]
-): [number, number] {
-  const [x1, y1] = c1;
-  const [x2, y2] = c2;
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const dist = Math.hypot(dx, dy);
-  const a = dist / 2;
-  const h = Math.sqrt(R * R - a * a);
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
-  const ux = -dy / dist;
-  const uy = dx / dist;
-  const p1: [number, number] = [mx + ux * h, my + uy * h];
-  const p2: [number, number] = [mx - ux * h, my - uy * h];
-  const far = (p: [number, number]) =>
-    Math.hypot(p[0] - CENTER, p[1] - CENTER);
-  return far(p1) > far(p2) ? p1 : p2;
+const CX = 200;
+const CY = 200;
+const R = 172;
+const SEG = 360 / STEPS.length;
+
+// Angle in degrees, 0 = top, increasing clockwise.
+function polar(angleDeg: number): [number, number] {
+  const rad = (angleDeg * Math.PI) / 180;
+  return [CX + R * Math.sin(rad), CY - R * Math.cos(rad)];
 }
 
-function buildCloverPath(): string {
-  // joins[i] sits between lobe i and lobe i+1.
-  const joins = LOBES.map((_, i) =>
-    farIntersection(LOBES[i], LOBES[(i + 1) % LOBES.length])
+// Segments meet end-to-end with butt caps, so the junctions are invisible
+// and the ring reads as one clean circle that changes color as it fills.
+function segmentPath(i: number): string {
+  const start = i * SEG;
+  const end = (i + 1) * SEG;
+  const [sx, sy] = polar(start);
+  const [ex, ey] = polar(end);
+  return `M ${sx.toFixed(1)} ${sy.toFixed(1)} A ${R} ${R} 0 0 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+}
+
+const SEG_D = STEPS.map((_, i) => segmentPath(i));
+
+function StepContent({ index }: { index: number }) {
+  const step = STEPS[index];
+  return (
+    <>
+      <div className="w-8 h-8 rounded-full border border-current flex items-center justify-center text-[13px] font-sans mb-4 text-black dark:text-white">
+        {index + 1}
+      </div>
+      <h3 className="font-sans font-medium text-[22px] sm:text-[24px] leading-[1.1] tracking-[-0.02em] text-black dark:text-white mb-3">
+        {step.title}
+      </h3>
+      <p className="font-sans text-[13px] sm:text-[14px] leading-[1.6] tracking-[-0.005em] text-black/60 dark:text-white/60">
+        {step.desc}
+      </p>
+    </>
   );
-
-  let d = '';
-  for (let i = 0; i < LOBES.length; i++) {
-    const enter = joins[(i + LOBES.length - 1) % LOBES.length];
-    const exit = joins[i];
-    if (i === 0) d += `M ${enter[0].toFixed(2)} ${enter[1].toFixed(2)} `;
-    else d += `L ${enter[0].toFixed(2)} ${enter[1].toFixed(2)} `;
-    // Outer arc is 270° → large-arc-flag 1, clockwise → sweep-flag 1.
-    d += `A ${R} ${R} 0 1 1 ${exit[0].toFixed(2)} ${exit[1].toFixed(2)} `;
-  }
-  return d + 'Z';
 }
-
-const CLOVER_D = buildCloverPath();
 
 export default function ProcessSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
+  const segRefs = useRef<Array<SVGPathElement | null>>([]);
   const [active, setActive] = useState(0);
 
   useLayoutEffect(() => {
-    const path = pathRef.current;
     const section = sectionRef.current;
-    if (!path || !section) return;
+    const segs = segRefs.current;
+    if (!section || segs.some((s) => !s)) return;
 
-    const total = path.getTotalLength();
-    gsap.set(path, { strokeDasharray: total, strokeDashoffset: total });
+    gsap.set(segs, { strokeDasharray: 100, strokeDashoffset: 100 });
 
     // Font loading shifts layout — recalc pin positions once fonts are ready.
     let cancelled = false;
@@ -106,24 +93,37 @@ export default function ProcessSection() {
       if (!cancelled) ScrollTrigger.refresh();
     });
 
+    let lastIdx = -1;
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=320%',
+          end: '+=250%',
           pin: true,
-          scrub: 0.5,
+          scrub: 1,
           onUpdate: (self) => {
             const idx = Math.min(
               STEPS.length - 1,
               Math.floor(self.progress * STEPS.length + 1e-6)
             );
-            setActive(idx);
+            if (idx !== lastIdx) {
+              lastIdx = idx;
+              setActive(idx);
+            }
           },
         },
       });
-      tl.to(path, { strokeDashoffset: 0, ease: 'none' });
+      STEPS.forEach((_, i) => {
+        // Reveal segment i across its fifth of the scroll.
+        tl.fromTo(
+          segs[i],
+          { strokeDashoffset: 100 },
+          { strokeDashoffset: 0, ease: 'none', duration: 1 },
+          i
+        );
+      });
     }, section);
 
     return () => {
@@ -137,52 +137,58 @@ export default function ProcessSection() {
       ref={sectionRef}
       className="relative w-full h-screen overflow-hidden flex items-center justify-center"
     >
-      {/* Clover outline + scroll-driven progress stroke */}
-      <svg
-        viewBox="0 0 1000 1000"
-        className="w-[min(92vw,86vh)] h-[min(92vw,86vh)] select-none"
-        fill="none"
-        aria-hidden="true"
-      >
-        {/* base track */}
-        <path
-          d={CLOVER_D}
-          stroke="currentColor"
-          strokeWidth="2.5"
-          className="text-black/12 dark:text-white/12"
-        />
-        {/* progress fill */}
-        <path
-          ref={pathRef}
-          d={CLOVER_D}
-          stroke="#8CD46A"
-          strokeWidth="5"
-          strokeLinecap="round"
-        />
-      </svg>
-
-      {/* Centered step content, cross-fading between steps */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="relative w-[min(80vw,460px)] min-h-[260px]">
-          {STEPS.map((step, i) => (
-            <div
-              key={step.title}
-              aria-hidden={active !== i}
-              className={`absolute inset-0 flex flex-col items-center justify-center text-center transition-opacity duration-500 ${
-                active === i ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <div className="w-9 h-9 rounded-full border border-current flex items-center justify-center text-[14px] font-sans mb-6 text-black dark:text-white">
-                {i + 1}
-              </div>
-              <h3 className="font-sans font-medium text-[30px] sm:text-[38px] leading-[1.05] tracking-[-0.02em] text-black dark:text-white mb-4">
-                {step.title}
-              </h3>
-              <p className="font-sans text-[15px] sm:text-[16px] leading-[1.55] tracking-[-0.005em] text-black/60 dark:text-white/60 max-w-[400px]">
-                {step.desc}
-              </p>
-            </div>
+      <div className="relative w-[min(110vw,400px)] aspect-square select-none">
+        <svg
+          viewBox="0 0 400 400"
+          className="absolute inset-0 w-full h-full"
+          fill="none"
+          aria-hidden="true"
+        >
+          {/* base track */}
+          <circle
+            cx={CX}
+            cy={CY}
+            r={R}
+            stroke="currentColor"
+            strokeWidth="1.25"
+            className="text-black/10 dark:text-white/10"
+          />
+          {/* progress segments — revealed one fifth of scroll each */}
+          {SEG_D.map((d, i) => (
+            <path
+              key={i}
+              ref={(el) => {
+                segRefs.current[i] = el;
+              }}
+              d={d}
+              pathLength={100}
+              stroke={SEG_COLORS[i]}
+              strokeWidth="3.5"
+              strokeLinecap="butt"
+            />
           ))}
+        </svg>
+
+        {/* Centered step content.
+            The tallest step renders invisibly to lock the box height, so
+            switching steps never shifts layout — only a soft crossfade. */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-[min(72vw,250px)] relative">
+            <div className="invisible flex flex-col items-center text-center" aria-hidden="true">
+              <StepContent index={0} />
+            </div>
+            {STEPS.map((step, i) => (
+              <div
+                key={step.title}
+                aria-hidden={active !== i}
+                className={`absolute inset-0 flex flex-col items-center justify-center text-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  active === i ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+                }`}
+              >
+                <StepContent index={i} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

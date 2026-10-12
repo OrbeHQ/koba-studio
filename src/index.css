@@ -7,66 +7,18 @@
 }
 
 @font-face {
-  font-family: 'PP Kyoto';
-  src: url('/PPKyoto-Thin.otf') format('opentype');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Kyoto';
-  src: url('/PPKyoto-ThinItalic.otf') format('opentype');
-  font-weight: 100;
+  font-family: 'Editorial_New';
+  src: url('/PPEditorialNew-Italic.woff2') format('woff2');
+  font-weight: normal;
   font-style: italic;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'PP Kyoto';
-  src: url('/PPKyoto-Light.otf') format('opentype');
-  font-weight: 300;
+  font-family: 'Editorial_New';
+  src: url('/PPEditorialNew-Regular.woff2') format('woff2');
+  font-weight: normal;
   font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Kyoto';
-  src: url('/PPKyoto-LightItalic.otf') format('opentype');
-  font-weight: 300;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Kyoto';
-  src: url('/PPKyoto-Medium.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Kyoto';
-  src: url('/PPKyoto-MediumItalic.otf') format('opentype');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Kyoto';
-  src: url('/PPKyoto-Extrabold.otf') format('opentype');
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Kyoto';
-  src: url('/PPKyoto-ExtraboldItalic.otf') format('opentype');
-  font-weight: 800;
-  font-style: italic;
   font-display: swap;
 }
 
@@ -123,9 +75,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "PP Kyoto", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Editorial_New", Georgia, serif;
   --font-mono: "Departure Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-editorial: "PP Frama", Georgia, serif;
+  --font-editorial: "Editorial_New", Georgia, serif;
 
   --logo-bg: #000000;
   --logo-mark: #FFFFFF;
@@ -161,4 +113,43 @@ a, button, [role="button"], .cursor-pointer {
 
 [data-hide-cursor="true"], [data-hide-cursor="true"] * {
   cursor: auto !important;
+}
+
+/* CNC plotter-style draw-on animation for the hero blueprint */
+.cnc-draw {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: cnc-draw linear forwards;
+}
+
+@keyframes cnc-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.cnc-pop {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cnc-pop 0.35s ease-out forwards;
+}
+
+@keyframes cnc-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cnc-draw,
+  .cnc-pop {
+    animation-duration: 0.01s !important;
+    animation-delay: 0s !important;
+  }
 }

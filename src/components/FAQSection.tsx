@@ -17,7 +17,7 @@ const FAQS: Faq[] = [
   },
   {
     q: 'What does a project cost?',
-    a: 'Most engagements land between $15k and $60k depending on scope. After a short intro call we send one fixed number — no surprise invoices, no hourly meter ticking in the background.',
+    a: 'We decide pricing based on scope. After a short intro call we map out what the project actually needs and come back with one fixed number — no menu of packages, no hourly meter ticking in the background.',
   },
   {
     q: 'Do you work with early-stage teams?',

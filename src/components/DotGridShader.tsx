@@ -5,7 +5,7 @@ import * as THREE from 'three';
 // Brand palette — same colors as BrandList
 const BRAND_COLORS: [number, number, number][] = [
   [1.0, 0.420, 0.169],   // #FF6B2B  orange
-  [0.306, 0.804, 0.769],  // #4ECDC4  teal
+  [0.749, 0.843, 0.918],  // #BFD7EA  clay pale blue
   [0.486, 0.361, 0.988],  // #7C5CFC  purple
   [1.0, 0.2, 0.4],        // #FF3366  hot pink
   [0.0, 0.761, 1.0],      // #00C2FF  electric blue
@@ -60,7 +60,7 @@ const fragmentShader = `
     float aspect = uResolution.x / uResolution.y;
 
     // Grid — solid sizing (denser & chunkier dots when rendered inside the logo)
-    float gridSize = mix(36.0, 24.0, uLogo);
+    float gridSize = mix(36.0, 22.0, uLogo);
     vec2 gridUv = vec2(uv.x * aspect, uv.y) * gridSize;
     vec2 cell = fract(gridUv);
     vec2 id = floor(gridUv);
@@ -108,7 +108,8 @@ const fragmentShader = `
     // Dynamic phase
     float dotPhase = hash(id) * 6.283;
     radius += sin(uTime * 1.5 + dotPhase) * 0.008;
-    radius = clamp(radius, 0.05, 0.35);
+    // Light mode: enlarge dots so the mark reads on the pale background
+    radius = clamp(radius * mix(1.15, 1.0, uTheme), 0.05, mix(0.40, 0.35, uTheme));
 
     // Square dot shape
     vec2 d = abs(cell - 0.5);
@@ -120,16 +121,8 @@ const fragmentShader = `
     vec3 color = mix(vec3(0.0), vec3(1.0), uTheme);
     color = mix(color, uBrandColor, uMouseHover);
 
-    // In logo variant, tint each quadrant with the Orbe mark palette
-    if (uLogo > 0.5) {
-      vec2 q = step(vec2(0.5), uv); // 1.0 on the right / top half
-      vec3 quad =
-        (q.x > 0.5 && q.y > 0.5) ? vec3(0.157, 0.392, 0.863) :  // top-right  #2864DC blue
-        (q.x > 0.5 && q.y < 0.5) ? vec3(0.902, 0.192, 0.478) :  // bottom-right #E6317A pink
-        (q.x < 0.5 && q.y > 0.5) ? vec3(0.965, 0.788, 0.271) :  // top-left   #F6C945 yellow
-                                    vec3(0.231, 0.702, 0.290);  // bottom-left #3BB34A green
-      color = mix(quad, uBrandColor, uMouseHover);
-    }
+    // Logo variant stays a single ink color — black on light, white on dark —
+    // blending to the brand color on hover. No per-quadrant palette.
 
     gl_FragColor = vec4(color, dot);
   }

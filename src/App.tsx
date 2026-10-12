@@ -25,22 +25,9 @@ const orbeMaskStyle = {
   WebkitMaskRepeat: 'no-repeat',
 } as React.CSSProperties;
 
-function IntersectionMarker({ className }: { className?: string }) {
-  return (
-    <div className={`absolute flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 z-20 text-gray-400 dark:text-neutral-800 ${className || ''}`}>
-      <div className="absolute top-1/2 left-1/2 mt-1.5 ml-1.5 grid grid-cols-2 gap-[2px]">
-        <div className="w-[1.5px] h-[1.5px] bg-currentColor"></div>
-        <div className="w-[1.5px] h-[1.5px] bg-currentColor"></div>
-        <div className="w-[1.5px] h-[1.5px] bg-currentColor"></div>
-        <div className="w-[1.5px] h-[1.5px] bg-currentColor"></div>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [hoveredBrandColor, setHoveredBrandColor] = useState<string | null>(null);
   const masterTl = useRef<gsap.core.Timeline | null>(null);
 
@@ -66,7 +53,6 @@ export default function App() {
       // Initialization: These happen INSTANTLY on mount, completely preventing FOUC
       gsap.set('.pillar-line-v', { scaleY: 0, transformOrigin: "top" });
       gsap.set('.pillar-line-h', { scaleX: 0, transformOrigin: "left" });
-      gsap.set('.nav-container', { y: -80, opacity: 0 });
       gsap.set('.hero-shader-container', { opacity: 0, filter: 'blur(10px)' });
       // gsap.set('.hero-text', { clipPath: 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)', y: 30 });
       gsap.set('.animate-fade-in', { y: 20, opacity: 0 });
@@ -91,13 +77,6 @@ export default function App() {
           duration: 2.5,
           ease: 'power2.inOut'
         }, 0.6)
-
-        .to('.nav-container', {
-          y: 0,
-          opacity: 1,
-          duration: 1.6,
-          ease: 'elastic.out(1, 0.65)'
-        }, 1.2)
 
         /* 
         .to('.hero-text', {
@@ -128,36 +107,32 @@ export default function App() {
         className="min-h-screen bg-[#EBEBEB] dark:bg-[#0A0A0A] text-[#1A1A1A] dark:text-[#EBEBEB] font-sans grid grid-cols-[32px_1fr_32px] sm:grid-cols-[64px_1fr_64px] md:grid-cols-[1fr_500px_1fr] lg:grid-cols-[1fr_500px_1fr] grid-rows-[auto_auto_auto_auto_auto_auto_1fr] transition-colors duration-300 relative"
       >
         {/* === GLOBAL ARCHITECTURAL PILLARS (run full height, including hero) === */}
-        {/* Left Double Pillar */}
-        <GridLine vertical className="pillar-line-v top-0 bottom-0 left-[32px] sm:left-[64px] md:left-[calc(50%-250px)] w-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
-        <GridLine vertical className="pillar-line-v top-0 bottom-0 left-[20px] sm:left-[52px] md:left-[calc(50%-262px)] w-px text-gray-400 dark:text-neutral-600" dashArray="none" />
+        {/* Left Double Pillar — solid column edge, dotted companion */}
+        <GridLine vertical className="pillar-line-v top-0 bottom-0 left-[32px] sm:left-[64px] md:left-[calc(50%-250px)] w-px text-gray-400 dark:text-neutral-600" dashArray="none" />
+        <GridLine vertical className="pillar-line-v top-0 bottom-0 left-[20px] sm:left-[52px] md:left-[calc(50%-262px)] w-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
 
-        {/* Right Double Pillar */}
-        <GridLine vertical className="pillar-line-v top-0 bottom-0 right-[32px] sm:right-[64px] md:right-[calc(50%-250px)] w-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
-        <GridLine vertical className="pillar-line-v top-0 bottom-0 right-[20px] sm:right-[52px] md:right-[calc(50%-262px)] w-px text-gray-400 dark:text-neutral-600" dashArray="none" />
+        {/* Right Double Pillar — solid column edge, dotted companion */}
+        <GridLine vertical className="pillar-line-v top-0 bottom-0 right-[32px] sm:right-[64px] md:right-[calc(50%-250px)] w-px text-gray-400 dark:text-neutral-600" dashArray="none" />
+        <GridLine vertical className="pillar-line-v top-0 bottom-0 right-[20px] sm:right-[52px] md:right-[calc(50%-262px)] w-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
 
-        {/* FLOATING NAVBAR */}
-        <nav className="nav-container fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 px-6 py-3 bg-[#EBEBEB]/80 dark:bg-[#0A0A0A]/80 backdrop-blur-md rounded-full border border-gray-400 dark:border-neutral-600 shadow-sm transition-colors duration-300 pointer-events-auto">
-          <div className="flex flex-col">
-            <div className="font-sans text-sm text-black dark:text-[#F5F0E8] font-bold">Orbe Labs</div>
-            <div className="font-mono text-[9px] uppercase text-black dark:text-white tracking-widest opacity-60">Design & Dev</div>
+        {/* STATIC HEADER — brand left, theme toggle right (scrolls with the page) */}
+        <header className="col-2 relative flex items-center justify-between px-5 sm:px-8 pt-12 pb-5 sm:pt-14 sm:pb-6 border-b border-gray-400 dark:border-neutral-600 transition-colors duration-300">
+          {/* dashed guide rule running the full width of the bar */}
+          <GridLine className="top-5 sm:top-6 left-[-2000px] right-[-2000px] h-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
+          <div className="animate-fade-in flex flex-col gap-0.5">
+            <div className="font-['PP_Frama'] font-extralight tracking-wide text-[15px] leading-tight text-[#1A1A1A] dark:text-[#EBEBEB]">Orbe Labs</div>
+            <div className="font-mono text-[11px] leading-tight text-black/50 dark:text-white/50">Design and development</div>
           </div>
-          <div className="w-px h-6 bg-gray-400 dark:bg-neutral-600"></div>
           <button
             onClick={toggleTheme}
-            className="w-4 h-4 rounded-full border border-gray-400 dark:border-gray-500 hover:border-gray-900 dark:hover:border-white transition-all duration-300 hover:scale-[1.15] cursor-pointer"
-            style={{ backgroundColor: theme === 'dark' ? 'currentColor' : 'transparent' }}
+            className="animate-fade-in w-4 h-4 rounded-full border border-gray-400 dark:border-gray-500 hover:border-gray-900 dark:hover:border-white transition-all duration-300 hover:scale-[1.15] cursor-pointer"
+            style={{ backgroundColor: theme === 'dark' ? '#EBEBEB' : 'transparent' }}
             aria-label="Toggle theme"
           />
-        </nav>
+        </header>
 
         {/* IMMERSIVE HERO — constrained to the middle grid column, shader lives inside the Orbe mark */}
         <div id="hero-section" className="col-2 h-[85vh] min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden border-b border-gray-400 dark:border-neutral-600 border-dashed transition-colors duration-300 px-5 sm:px-8">
-          <IntersectionMarker className="top-0 left-0" />
-          <IntersectionMarker className="top-0 right-0" />
-          <IntersectionMarker className="bottom-0 left-0" />
-          <IntersectionMarker className="bottom-0 right-0" />
-
           {/* Interactive dot-grid shader, masked to the silhouette of the Orbe logo (Lazy Loaded) */}
           <div
             className="hero-shader-container relative z-10 w-full max-w-[500px] aspect-square"
@@ -174,10 +149,10 @@ export default function App() {
           <GridLine className="pillar-line-h top-3 left-[-2000px] right-[-2000px] h-px text-gray-400 dark:text-neutral-600" dashArray="2 4" />
 
           <div className="animate-fade-in flex flex-col gap-8 sm:gap-10 mt-6 md:mt-10">
-            <p className="font-editorial text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
+            <p className="font-sans text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
           Orbe Labs is an independent design and development studio for ideas with somewhere to go. We give them shape, character, and a life beyond the screen.
             </p>
-            <p className="font-editorial text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
+            <p className="font-sans text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
               We work only with founders and teams whose vision we believe in. From day one we sit beside you so nothing gets diluted between the idea and the product that ships. Design and code move as one. We start quickly, test the edges, and refine until every detail lands exactly as you intended.
             </p>
           </div>
@@ -204,7 +179,7 @@ export default function App() {
         <div className="col-2 py-10 sm:py-14 px-5 sm:px-8 flex flex-col gap-10 transition-colors duration-300 relative">
           <GridLine className="pillar-line-h bottom-0 left-[-2000px] right-[-2000px] h-px text-gray-400 dark:text-neutral-600" dashArray="none" />
           <div className="animate-fade-in flex flex-col gap-6 sm:gap-8 mt-4 md:mt-8">
-            <p className="font-editorial text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
+            <p className="font-sans text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
               Got something you're excited about? Let's make it real together. <br className="hidden sm:block" />
               <a href="#" className="font-medium text-black dark:text-white underline decoration-[1.5px] underline-offset-4 hover:opacity-70 transition-opacity">hello@orbelabs.com</a>
             </p>
