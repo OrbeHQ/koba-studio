@@ -6,7 +6,7 @@ interface OrbeLogoProps {
 }
 
 /**
- * The Orbe Labs mark — four orbital quadrants in brand blue, pink, yellow and green.
+ * The Orbe Labs mark — four orbital quadrants in brand blue, pale blue, yellow and orange.
  */
 export default function OrbeLogo({ className = "", size = 48 }: OrbeLogoProps) {
   return (
@@ -20,9 +20,9 @@ export default function OrbeLogo({ className = "", size = 48 }: OrbeLogoProps) {
       aria-hidden="true"
     >
       <path d="M100 0H87.4915V16.9396C77.9935 6.16979 64.3259 0 49.9661 0V12.5085C70.6908 12.5085 87.4915 29.3093 87.4915 50.0341H100V0Z" fill="#2864DC" />
-      <path d="M100 49.95H87.4915V66.8896C77.9935 56.1198 64.3259 49.95 49.9661 49.95V62.4585C70.6908 62.4585 87.4915 79.2593 87.4915 99.9841H100V49.95Z" fill="#E6317A" />
+      <path d="M100 49.9502H87.4915V66.8898C77.9935 56.12 64.3259 49.9502 49.9661 49.9502V62.4587C70.6908 62.4587 87.4915 79.2595 87.4915 99.9843H100V49.9502Z" fill="#BFD7EA" />
       <path d="M0 0H12.5085V16.9396C22.0065 6.16979 35.6741 0 50.0339 0V12.5085C29.3092 12.5085 12.5085 29.3093 12.5085 50.0341H0V0Z" fill="#F6C945" />
-      <path d="M0 49.95H12.5085V66.8896C22.0065 56.1198 35.6741 49.95 50.0339 49.95V62.4585C29.3092 62.4585 12.5085 79.2593 12.5085 99.9841H0V49.95Z" fill="#3BB34A" />
+      <path d="M0 49.9502H12.5085V66.8898C22.0065 56.12 35.6741 49.9502 50.0339 49.9502V62.4587C29.3092 62.4587 12.5085 79.2595 12.5085 99.9843H0V49.9502Z" fill="#F15A24" />
     </svg>
   );
 }

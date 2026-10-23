@@ -32,8 +32,9 @@ const STEPS: Step[] = [
   },
 ];
 
-// One brand color per segment, clockwise from the top.
-const SEG_COLORS = ['#2864DC', '#E6317A', '#3BB34A', '#F6C945', '#FF6B2B'];
+// One logo color per segment, clockwise from the top — the mark's top-right,
+// bottom-right, bottom-left and top-left quadrants, plus a fifth accent.
+const SEG_COLORS = ['#2864DC', '#BFD7EA', '#F15A24', '#F6C945', '#E6317A'];
 
 const CX = 200;
 const CY = 200;
