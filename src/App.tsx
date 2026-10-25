@@ -181,7 +181,7 @@ export default function App() {
           <div className="animate-fade-in flex flex-col gap-6 sm:gap-8 mt-4 md:mt-8">
             <p className="font-sans text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
               Got something you're excited about? Let's make it real together. <br className="hidden sm:block" />
-              <a href="#" className="font-medium text-black dark:text-white underline decoration-[1.5px] underline-offset-4 hover:opacity-70 transition-opacity">hello@orbelabs.com</a>
+              <a href="mailto:info@orbelabs.org" className="font-medium text-black dark:text-white underline decoration-[1.5px] underline-offset-4 hover:opacity-70 transition-opacity">info@orbelabs.org</a>
             </p>
             <p className="font-editorial text-[16px] sm:text-[18px] text-[#111] dark:text-[#F3F3F3] opacity-60 antialiased">
               Based in Ethiopia, available remotely.
