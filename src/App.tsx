@@ -6,6 +6,7 @@ import GridLine from './components/GridLine';
 import OrbeLogo from './components/OrbeLogo';
 import FAQSection from './components/FAQSection';
 import ProcessSection from './components/ProcessSection';
+import ContactForm from './components/ContactForm';
 import { playTapSound } from './lib/audio';
 import CustomCursor from './components/CustomCursor';
 
@@ -176,7 +177,7 @@ export default function App() {
         <FAQSection />
 
         {/* Row 5: Contact/Vision + Interactive Canvas (Lazy Loaded) */}
-        <div className="col-2 py-10 sm:py-14 px-5 sm:px-8 flex flex-col gap-10 transition-colors duration-300 relative">
+        <div id="contact" className="col-2 py-10 sm:py-14 px-5 sm:px-8 flex flex-col gap-10 transition-colors duration-300 relative">
           <GridLine className="pillar-line-h bottom-0 left-[-2000px] right-[-2000px] h-px text-gray-400 dark:text-neutral-600" dashArray="none" />
           <div className="animate-fade-in flex flex-col gap-6 sm:gap-8 mt-4 md:mt-8">
             <p className="font-sans text-[#111] dark:text-[#F3F3F3] leading-[1.65] font-normal tracking-[0.01em] text-[18px] sm:text-[21px] antialiased">
@@ -186,6 +187,9 @@ export default function App() {
             <p className="font-editorial text-[16px] sm:text-[18px] text-[#111] dark:text-[#F3F3F3] opacity-60 antialiased">
               Based in Ethiopia, available remotely.
             </p>
+            <div className="animate-fade-in">
+              <ContactForm />
+            </div>
           </div>
           <div className="animate-fade-in">
             <Suspense fallback={<div className="h-[400px] flex items-center justify-center font-mono text-sm opacity-50">INITIALIZING CANVAS...</div>}>
